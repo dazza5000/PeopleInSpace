@@ -6,12 +6,14 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.surrus.common.model.personBios
 import com.surrus.common.model.personImages
 import com.surrus.common.remote.Assignment
+import com.surrus.common.remote.IssPosition
 import com.surrus.common.remote.PeopleInSpaceApi
 import com.surrus.peopleinspace.db.PeopleInSpaceDatabase
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.*
 import org.koin.core.KoinComponent
 import org.koin.core.inject
 
@@ -19,6 +21,7 @@ import org.koin.core.inject
 class PeopleInSpaceRepository() : KoinComponent {
     private val peopleInSpaceApi: PeopleInSpaceApi by inject()
     private val logger: Kermit by inject()
+
     private val coroutineScope: CoroutineScope = MainScope()
     private val peopleInSpaceDatabase = createDb()
     private val peopleInSpaceQueries = peopleInSpaceDatabase?.peopleInSpaceQueries
@@ -77,5 +80,14 @@ class PeopleInSpaceRepository() : KoinComponent {
 
     @Throws(Exception::class)
     suspend fun fetchISSPosition() = peopleInSpaceApi.fetchISSPosition().iss_position
+
+    fun pollISSPosition(): Flow<IssPosition> = flow {
+        while (true) {
+            val position = peopleInSpaceApi.fetchISSPosition().iss_position
+            emit(position)
+            logger.d("PeopleInSpaceRepository") { position.toString() }
+            delay(5000)
+        }
+    }
 }
 
